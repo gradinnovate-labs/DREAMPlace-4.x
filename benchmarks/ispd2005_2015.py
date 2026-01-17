@@ -6,13 +6,11 @@
 
 import os
 import sys
-from pyunpack import Archive
+import tarfile
 if sys.version_info[0] < 3:
     import urllib2 as urllib
-    from StringIO import StringIO
 else:
     import urllib.request as urllib
-    from io import BytesIO as StringIO
 
 baseURL = "http://www.cerc.utexas.edu/~zixuan/"
 target_dir = os.path.dirname(os.path.abspath(__file__))
@@ -29,7 +27,8 @@ for filename in filenames:
         f.write(content)
 
     print("Uncompress %s to %s" % (path_to_file, target_dir))
-    Archive(path_to_file).extractall(target_dir)
+    with tarfile.open(path_to_file, 'r:xz') as tar:
+        tar.extractall(target_dir)
 
     print("remove downloaded file %s" % (path_to_file))
     os.remove(path_to_file)

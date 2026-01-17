@@ -1,34 +1,45 @@
-FROM pytorch/pytorch:1.7.1-cuda11.0-cudnn8-devel
+FROM nvidia/cuda:12.8.0-devel-ubuntu22.04
 LABEL maintainer="Yibo Lin <yibolin@pku.edu.cn>"
 
-# Rotates to the keys used by NVIDIA as of 27-APR-2022.
-RUN rm /etc/apt/sources.list.d/cuda.list
-RUN rm /etc/apt/sources.list.d/nvidia-ml.list
-RUN apt-key del 7fa2af80
-RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
-RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub
-
-
-# Installs system dependencies.
+# Install system dependency (must be first for wget)
 RUN apt-get update \
-        && apt-get install -y \
+        && apt-get install -y --no-install-recommends \
+            wget \
             flex \
+            bison \
+            libfl-dev \
             libcairo2-dev \
-            libboost-all-dev 
+            libboost-all-dev \
+            git \
+            zlib1g-dev \
+            && apt-get clean \
+            && rm -rf /var/lib/apt/lists/*
 
+# Install miniconda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /miniconda.sh && \
+    bash /miniconda.sh -b -p /opt/conda && \
+    rm /miniconda.sh && \
+    /opt/conda/bin/conda clean -afy
 
-# Installs system dependencies from conda.
-RUN conda install -y -c conda-forge bison
+ENV PATH="/opt/conda/bin:${PATH}"
 
-# Installs cmake.
-ADD https://cmake.org/files/v3.21/cmake-3.21.0-linux-x86_64.sh /cmake-3.21.0-linux-x86_64.sh
+# Install cmake
+ADD https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.sh /cmake-3.25.1-linux-x86_64.sh
 RUN mkdir /opt/cmake \
-        && sh /cmake-3.21.0-linux-x86_64.sh --prefix=/opt/cmake --skip-license \
+        && sh /cmake-3.25.1-linux-x86_64.sh --prefix=/opt/cmake --skip-license \
         && ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake \
         && cmake --version
 
-# Installs python dependencies. 
-RUN pip install \
+# Install PyTorch with CUDA 12.8 support
+# cu128 index only has PyTorch 2.7.0+ available
+RUN pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu128
+
+# Upgrade numpy for compatibility
+RUN pip install --upgrade numpy>=1.24
+
+# install python dependency 
+RUN pip install --upgrade \
+        numpy>=1.24 \
         pyunpack>=0.1.2 \
         patool>=1.12 \
         matplotlib>=2.2.2 \
@@ -36,5 +47,7 @@ RUN pip install \
         pkgconfig>=1.4.0 \
         setuptools>=39.1.0 \
         scipy>=1.1.0 \
-        numpy>=1.15.4 \
-        shapely>=1.7.0
+        shapely>=1.7.0 \
+        torch_optimizer \
+        ncg_optimizer
+

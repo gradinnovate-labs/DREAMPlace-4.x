@@ -12,12 +12,9 @@
 #include "utility/src/namespace.h"
 
 // include cub in a safe manner
-#define CUB_NS_PREFIX namespace DREAMPLACE_NAMESPACE {
-#define CUB_NS_POSTFIX }
-#define CUB_NS_QUALIFIER DREAMPLACE_NAMESPACE::cub
+// CUDA 12.1 uses cuda::std namespace 
+// Note: system CUB at /usr/local/cuda/include is used
+// Solution: Do NOT use namespace wrapper, use cub directly
 #include "cub/cub.cuh"
-#undef CUB_NS_QUALIFIER
-#undef CUB_NS_POSTFIX
-#undef CUB_NS_PREFIX
 
 #endif
